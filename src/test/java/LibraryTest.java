@@ -120,13 +120,14 @@ public class LibraryTest {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery criteria = cb.createQuery();
         Root<Item> i = criteria.from(Item.class);
-        i.fetch("bids", JoinType.LEFT);
+        Fetch<Item, Bid> bids = i.fetch("bids", JoinType.LEFT);
+        bids.fetch("bidder", JoinType.LEFT);
         i.fetch("seller", JoinType.INNER);
         criteria.select(i).where(cb.equal(i.get("id"), 1));
         TypedQuery<Item> query = em.createQuery(criteria);
         List<Item> item = query.getResultList();
         Set<Item> distinctItem = new LinkedHashSet<Item>(item);
-        System.out.println(distinctItem);
+//        System.out.println(distinctItem);
     }
 
     private static void joinFetch2(EntityManager em) {
