@@ -1,5 +1,7 @@
 import domain.Bid;
+import domain.Category;
 import domain.Item;
+import org.hibernate.Hibernate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,6 +10,7 @@ import javax.persistence.*;
 import javax.persistence.criteria.*;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,7 +24,7 @@ import static org.junit.Assert.*;
  * @author hello, @date 9/3/16 7:01 PM
  */
 public class LibraryTest {
-    EntityManagerFactory emf = Persistence.createEntityManagerFactory("jpabook");
+    EntityManagerFactory emf;
     EntityManager em;
     EntityTransaction tx;
 
@@ -50,7 +53,7 @@ public class LibraryTest {
         try {
             tx.begin();
 
-            joinFetch(em);
+            restrictCollection(em);
 
             tx.commit();
         } catch (Exception e) {
@@ -105,12 +108,12 @@ public class LibraryTest {
     }
 
     private static void jpqlTest(EntityManager em) {
-        Query result =  em.createQuery("select i from Item i join i.bids b where b.amount > 100");
+        Query result = em.createQuery("select i from Item i join i.bids b where b.amount > 100");
         List<Item> list = result.getResultList();
     }
 
     private static void singleJPQLProducesMultipleSQLs(EntityManager em) {
-        Query result =  em.createQuery("select i from Item i");
+        Query result = em.createQuery("select i from Item i");
         List<Item> list = result.getResultList();
         // 왜 user를 join해서 가져오는것이 아니라 each item들의 유저들을 각각 sql로 가져오는가 (N + 1 query problem)
 
@@ -140,5 +143,46 @@ public class LibraryTest {
         List<Item> item = query.getResultList();
         Set<Item> distinctItem = new LinkedHashSet<Item>(item);
         System.out.println(distinctItem);
+    }
+
+    private static void batchLoad(EntityManager em) {
+        Query query = em.createQuery("select i from Item i");
+        List<Item> items = query.getResultList();
+        for (Item item : items) {
+            System.out.println(item.getBids().get(0).getId());
+        }
+
+    }
+
+    private static void categoryTest(EntityManager em) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery criteria = cb.createQuery();
+        Root<Category> c = criteria.from(Category.class);
+        c.fetch("items", JoinType.LEFT);
+        TypedQuery<Category> query = em.createQuery(criteria);
+        List<Category> categories = query.getResultList();
+        Set<Category> distinctCategory = new LinkedHashSet<Category>(categories);
+    }
+
+    private static void restrictCollection(EntityManager em) {
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery criteria = cb.createQuery();
+        Item item = em.find(Item.class, 1L);
+
+
+
+        Root<Category> c = criteria.from(Category.class);
+        criteria.select(c).where(cb.isMember(
+                item, c.<Collection<Item>>get("items")));
+
+        TypedQuery<Category> query = em.createQuery(criteria);
+        List<Category> categories = query.getResultList();
+
+        int a = 0;
+
+        /**
+         * select c from Category c where :item member of c.items
+         * select * from CATEGORY c where kj;k;k;kl;
+         */
     }
 }

@@ -2,6 +2,7 @@ package domain;
 
 
 
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
@@ -22,13 +23,19 @@ public class Item implements Serializable {
     private Long id = null;
 
     private String name;
-    @Fetch(FetchMode.JOIN)
+//    @Fetch(FetchMode.JOIN)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "SELLER_ID", nullable = false)
     private User seller;
 
     @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
+//    @BatchSize(size = 3)
+    @Fetch(FetchMode.SUBSELECT)
     private List<Bid> bids;
+
+    @ManyToOne
+    @JoinColumn(name = "CATEGORY_ID", nullable = false, updatable = false, insertable = false)
+    private Category category;
 
     /**
      * No-arg constructor for JavaBean tools.
